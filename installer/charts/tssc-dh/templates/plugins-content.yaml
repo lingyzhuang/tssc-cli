@@ -12,14 +12,14 @@ plugins:
   - disabled: false
     package: ./dynamic-plugins/dist/backstage-community-plugin-redhat-argocd
   - disabled: false
-    package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+    package: oci://registry.redhat.io/rhtap-backstage-plugins/rhtap-backstage-plugins-artifacts:1.5.0!rhtap-plugins-backstage-community-plugin-redhat-argocd-backend-dynamic
     pluginConfig:
       argocd:
         appLocatorMethods:
           - type: 'config'
             instances: []
   - disabled: false
-    package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-argocd-dynamic
+    package: oci://registry.redhat.io/rhtap-backstage-plugins/rhtap-backstage-plugins-artifacts:1.5.0!rhtap-plugins-backstage-community-plugin-redhat-argocd-dynamic
     pluginConfig:
       argocd:
         appLocatorMethods:
