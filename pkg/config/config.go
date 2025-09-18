@@ -162,8 +162,8 @@ func NewConfigFromFile(cfs *chartfs.ChartFS, configPath string) (*Config, error)
 // NewConfigFromBytes instantiates a new Config from the bytes payload informed.
 func NewConfigFromBytes(payload []byte) (*Config, error) {
 	c := &Config{}
-	if err := yaml.Unmarshal(payload, &c.root); err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrUnmarshalConfig, err)
+	if err := c.UnmarshalYAML(payload); err != nil {
+		return nil, err
 	}
 	return c, nil
 }
