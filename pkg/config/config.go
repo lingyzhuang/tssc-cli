@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/redhat-appstudio/tssc-cli/pkg/chartfs"
 
@@ -95,11 +96,21 @@ func (c *Config) DecodeNode() error {
 	if len(c.root.Content) == 0 {
 		return fmt.Errorf("invalid configuration: content is empty")
 	}
-	if len(c.root.Content[0].Content) == 0 {
-		return fmt.Errorf("invalid configuration: missing content")
+	doc := c.root.Content[0]
+	if doc.Kind != yaml.MappingNode || len(doc.Content) < 2 {
+		return fmt.Errorf("invalid configuration: root must be a mapping")
 	}
-	root := c.root.Content[0].Content[1]
-	if err := root.Decode(&c.Installer); err != nil {
+	var tsscNode *yaml.Node
+	for i := 0; i+1 < len(doc.Content); i += 2 {
+		if doc.Content[i].Value == "tssc" {
+			tsscNode = doc.Content[i+1]
+			break
+		}
+	}
+	if tsscNode == nil {
+		return fmt.Errorf("invalid configuration: missing 'tssc' key")
+	}
+	if err := tsscNode.Decode(&c.Installer); err != nil {
 		return err
 	}
 	return nil
@@ -143,6 +154,139 @@ func (c *Config) String() string {
 		panic(err)
 	}
 	return string(data)
+}
+
+// UpdateMappingValue updates configuration with new value
+func (c *Config) UpdateMappingValue(node *yaml.Node, key string, newValue any) error {
+	for i := 0; i < len(node.Content); i += 2 {
+		if i+1 < len(node.Content) && node.Content[i].Value == key {
+			strVal := fmt.Sprintf("%v", newValue)
+			node.Content[i+1].Value = strVal
+			return nil
+		}
+	}
+	return fmt.Errorf("no key: %s found in configuration", key)
+}
+
+// UpdateNestedValue loops in node contents to get the node that needs update
+func (c *Config) UpdateNestedValue(node *yaml.Node, path []string, newValue any) error {
+	if len(path) == 0 {
+		return fmt.Errorf("config path is missing")
+	}
+	if path[0] == "tssc" {
+		path = path[1:]
+	}
+	if len(path) == 1 {
+		return c.UpdateMappingValue(node, path[0], newValue)
+	}
+	current := node
+	key := path[0]
+	for i := 0; i < len(current.Content); i += 2 {
+		if i+1 < len(current.Content) && current.Content[i].Value == key {
+			return c.UpdateNestedValue(current.Content[i+1], path[1:], newValue)
+		}
+	}
+	return fmt.Errorf("not able to update configuration, please check the input")
+}
+
+// UpdateNestedValues gets the config content and call UpdateNestedValue to update
+func (c *Config) UpdateNestedValues(path []string, newValue any) error {
+	if len(c.root.Content) == 0 {
+		return fmt.Errorf("invalid configuration format: content is nil or empty")
+	}
+	root := c.root.Content[0]
+	if len(root.Content) == 0 {
+		return fmt.Errorf("invalid configuration format")
+	}
+	switch vt := newValue.(type) {
+	case string:
+		return c.UpdateNestedValue(root.Content[1], path, vt)
+	case []any:
+		if len(path) != len(vt) {
+			return fmt.Errorf("key value do not match")
+		}
+		for i := 0; i < len(path); i += 1 {
+			keyPath := strings.Split(path[i], ".")
+			if err := c.UpdateNestedValue(root.Content[1], keyPath, vt[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("not able to update configuration, please check the input")
+	}
+}
+
+// ExtractFromStringMap extract config path and values from string map
+func ExtractFromStringMap(m map[string]interface{}, prefix string, keyPaths *[]string, values *[]interface{}) {
+	for key, value := range m {
+		currentPath := key
+		if prefix != "" {
+			currentPath = prefix + "." + key
+		}
+		switch v := value.(type) {
+		case map[string]interface{}:
+			ExtractFromStringMap(v, currentPath, keyPaths, values)
+		case map[interface{}]interface{}:
+			ExtractFromInterfaceMap(v, currentPath, keyPaths, values)
+		default:
+			*keyPaths = append(*keyPaths, currentPath)
+			*values = append(*values, value)
+		}
+	}
+}
+
+// ExtractFromInterfaceMap extract path and value from interface map
+func ExtractFromInterfaceMap(m map[interface{}]interface{}, prefix string, keyPaths *[]string, values *[]interface{}) {
+	for k, value := range m {
+		key := fmt.Sprintf("%v", k)
+		currentPath := key
+		if prefix != "" {
+			currentPath = prefix + "." + key
+		}
+		switch v := value.(type) {
+		case map[string]interface{}:
+			ExtractFromStringMap(v, currentPath, keyPaths, values)
+		case map[interface{}]interface{}:
+			ExtractFromInterfaceMap(v, currentPath, keyPaths, values)
+		default:
+			*keyPaths = append(*keyPaths, currentPath)
+			*values = append(*values, value)
+		}
+	}
+}
+
+// ExtractKeyPathsAndValues return keyPaths and values of new config
+func ExtractKeyPathsAndValues(data interface{}, prefix string) ([]string, []interface{}) {
+	var keyPaths []string
+	var values []interface{}
+	switch m := data.(type) {
+	case map[string]interface{}:
+		ExtractFromStringMap(m, prefix, &keyPaths, &values)
+	case map[interface{}]interface{}:
+		ExtractFromInterfaceMap(m, prefix, &keyPaths, &values)
+	}
+	return keyPaths, values
+}
+
+// Set returns new configuration with updates
+func (c *Config) Set(key string, configData any) error {
+	switch cd := configData.(type) {
+	case string:
+		keyPath := strings.Split(key, ".")
+		if len(keyPath) < 2 {
+			return fmt.Errorf("invalid key set")
+		}
+		if err := c.UpdateNestedValues(keyPath, cd); err != nil {
+			return err
+		}
+	case map[string]any:
+		keyPaths, values := ExtractKeyPathsAndValues(cd, key)
+		if err := c.UpdateNestedValues(keyPaths, values); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // NewConfigFromFile returns a new Config instance based on the informed file.

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/redhat-appstudio/tssc-cli/pkg/config"
+	"github.com/redhat-appstudio/tssc-cli/pkg/constants"
 	"github.com/redhat-appstudio/tssc-cli/pkg/k8s"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -27,10 +28,17 @@ type ConfigTools struct {
 }
 
 const (
+	// ConfigGetTool MCP config get tool name.
+	ConfigGetTool = constants.AppName + "_config_get"
+	// ConfigCreateTool MCP config create tool name.
+	ConfigCreateTool = constants.AppName + "_config_create"
+
 	// NamespaceArg namespace argument.
 	NamespaceArg = "namespace"
 	// SettingsArg settings argument.
-	SettingsArg = "setting"
+	SettingsArg = "settings"
+	// ProductsArg products argument.
+	ProductsArg = "products"
 )
 
 // getHandler similar to "tssc config --get" subcommand it returns a existing TSSC
@@ -92,10 +100,16 @@ func (c *ConfigTools) createHandler(
 	// Setting the namespace from user input, if provided.
 	if ns, ok := ctr.GetArguments()[NamespaceArg].(string); ok {
 		cfg.Installer.Namespace = ns
+		// Set namespace to value of ns
+		cfg.Set("tssc.namespace", ns)
 	}
 
-	if settings, ok := ctr.GetArguments()[SettingsArg].(config.Settings); ok {
-		cfg.Installer.Settings = settings
+	if settings, ok := ctr.GetArguments()[SettingsArg].(map[string]interface{}); ok {
+		if products, isProduct := settings["products"]; isProduct {
+			cfg.Set("tssc.products", products)
+		} else {
+			cfg.Set("tssc.settings", settings)
+		}
 	}
 
 	// Ensure the configuration is valid.
@@ -139,7 +153,7 @@ TSSC has been successfully configured in namespace %s with settings:
 func (c *ConfigTools) Init(s *server.MCPServer) {
 	s.AddTools([]server.ServerTool{{
 		Tool: mcp.NewTool(
-			"tssc_config_get",
+			ConfigGetTool,
 			mcp.WithDescription(`
 Get the existing TSSC configuration in the cluster, or return the default if none
 exists yet. Use the default configuration as the reference to create a new TSSC
@@ -149,7 +163,7 @@ configuration for the cluster.`,
 		Handler: c.getHandler,
 	}, {
 		Tool: mcp.NewTool(
-			"tssc_config_create",
+			ConfigCreateTool,
 			mcp.WithDescription(`
 Create a new TSSC configuration in the cluster, in case none exists yet. Use the
 defaults as the reference to create a new TSSC cluster configuration.`,
