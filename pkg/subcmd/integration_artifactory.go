@@ -32,6 +32,12 @@ credentials required by the TSSC services to interact with artifactory.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const artifactoryIntegrationExample = `
+  $ tssc integration artifactory \
+	  --dockerconfigjson '{ "auths": { "artifactory.io/my-repository": { "auth": "REDACTED" } } }' \
+	  --token "REDACTED" \
+	  --url 'https://artifactory.io'
+`
 
 // Cmd exposes the cobra instance.
 func (a *IntegrationArtifactory) Cmd() *cobra.Command {
@@ -67,6 +73,7 @@ func NewIntegrationArtifactory(
 			Use:          "artifactory [flags]",
 			Short:        "Integrates a Artifactory instance into TSSC",
 			Long:         artifactoryIntegrationLongDesc,
+			Example:      artifactoryIntegrationExample,
 			SilenceUsage: true,
 		},
 

@@ -29,6 +29,11 @@ credentials required by the TSSC services to interact with ACS.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const acsIntegrationExample = `
+  $ tssc integration acs \
+	  --endpoint "acs.example.com:1111" \
+	  --token "REDACTED"
+`
 
 // Cmd exposes the cobra instance.
 func (a *IntegrationACS) Cmd() *cobra.Command {
@@ -64,6 +69,7 @@ func NewIntegrationACS(
 			Use:          "acs [flags]",
 			Short:        "Integrates a ACS instance into TSSC",
 			Long:         acsIntegrationLongDesc,
+			Example:      acsIntegrationExample,
 			SilenceUsage: true,
 		},
 

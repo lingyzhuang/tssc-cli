@@ -27,6 +27,11 @@ Manages the TrustedArtifactSigner integration with TSSC, by storing the required
 URL required to interact with Trusted Artifact Signer.
 
 The credentials are stored in a Kubernetes Secret in the configured namespace for TSSC.`
+const trustedArtifactSignerIntegrationExample = `
+  $ tssc integration trusted-artifact-signer \
+	  --rekor-url "https://rekor.sigstore.dev" \
+	  --tuf-url "https://tuf.trustification.dev"
+`
 
 // Cmd exposes the cobra instance.
 func (t *IntegrationTrustedArtifactSigner) Cmd() *cobra.Command {
@@ -63,6 +68,7 @@ func NewIntegrationTrustedArtifactSigner(
 			Use:          "trusted-artifact-signer [flags]",
 			Short:        "Integrates a Trusted Artifact Signer instance into TSSC",
 			Long:         trustedArtifactSignerIntegrationLongDesc,
+			Example:      trustedArtifactSignerIntegrationExample,
 			SilenceUsage: true,
 		},
 

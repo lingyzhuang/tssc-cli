@@ -29,6 +29,12 @@ credentials required by the TSSC services to interact with Nexus.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const nexusIntegrationExample = `
+  $ tssc integration nexus \
+	  --dockerconfigjson '{ "auths": { "nexus.io/my-repository": { "auth": "REDACTED" } } }' \
+	  --token "REDACTED" \
+	  --url 'https://nexus.io'
+`
 
 // Cmd exposes the cobra instance.
 func (n *IntegrationNexus) Cmd() *cobra.Command {
@@ -64,6 +70,7 @@ func NewIntegrationNexus(
 			Use:          "nexus [flags]",
 			Short:        "Integrates a Nexus instance into TSSC",
 			Long:         nexusIntegrationLongDesc,
+			Example:      nexusIntegrationExample,
 			SilenceUsage: true,
 		},
 

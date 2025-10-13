@@ -41,6 +41,12 @@ repository path "quay.io/my-repository", as shown below:
 The given API token (--token) must have push/pull permissions on the target
 repository.
 `
+const quayIntegrationExample = `
+  $ tssc integration quay \
+	  --dockerconfigjson '{ "auths": { "quay.io/my-repository": { "auth": "REDACTED" } } }' \
+	  --token "REDACTED" \
+	  --url 'https://quay.io'
+`
 
 // Cmd exposes the cobra instance.
 func (q *IntegrationQuay) Cmd() *cobra.Command {
@@ -76,6 +82,7 @@ func NewIntegrationQuay(
 			Use:          "quay [flags]",
 			Short:        "Integrates a Quay instance into TSSC",
 			Long:         quayIntegrationLongDesc,
+			Example:      quayIntegrationExample,
 			SilenceUsage: true,
 		},
 

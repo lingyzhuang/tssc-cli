@@ -39,6 +39,12 @@ The given personal access token (--token) must have the desired permissions for
 OpenShift GitOps and Openshift Pipelines to interact with the repositores, adding
 "push" permission may be required.
 `
+const githubIntegrationExample = `
+  $ tssc integration github my-github-app \
+	  --create \
+	  --token "REDACTED" \
+	  --org "my-github-org"
+`
 
 // Cmd exposes the cobra instance.
 func (g *IntegrationGitHub) Cmd() *cobra.Command {
@@ -101,6 +107,7 @@ func NewIntegrationGitHub(
 			Use:          "github <name> [--create|--update] [flags]",
 			Short:        "Prepares a GitHub App for TSSC integration",
 			Long:         integrationLongDesc,
+			Example:      githubIntegrationExample,
 			SilenceUsage: true,
 		},
 

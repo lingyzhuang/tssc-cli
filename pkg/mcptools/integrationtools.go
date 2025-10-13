@@ -18,7 +18,16 @@ type IntegrationTools struct {
 }
 
 // IntegrationListTool list integrations tool.
-const IntegrationListTool = "tssc_integration_list"
+const (
+	// IntegrationListTool
+	IntegrationListTool = constants.AppName + "_integration_list"
+	// IntegrationScaffoldTool
+	IntegrationScaffoldTool = constants.AppName + "_integration_scaffold"
+	// IntegrationStatusTool
+	IntegrationStatusTool = constants.AppName + "_integration_status"
+	// MissingIntegrations
+	MissingIntegrations = "integration"
+)
 
 func (i *IntegrationTools) listHandler(
 	ctx context.Context,
@@ -72,6 +81,32 @@ The detailed description of each '%s integration' command is found below.
 	return mcp.NewToolResultText(output.String()), nil
 }
 
+func (i *IntegrationTools) scaffoldHandler(
+	ctx context.Context,
+	ctr mcp.CallToolRequest,
+) (*mcp.CallToolResult, error) {
+	var output strings.Builder
+	// Validate integrations
+	if integrations, ok := ctr.GetArguments()[MissingIntegrations].([]any); ok {
+		for _, integration := range integrations {
+			for _, subCmd := range i.integrationCmd.Commands() {
+				if integration == subCmd.Name() {
+					output.WriteString(fmt.Sprintf(`
+## Integration: %s is missing, please create the integration with following command:
+
+%s
+`,
+						subCmd.Name(),
+						subCmd.Example,
+					))
+				}
+			}
+		}
+	}
+
+	return mcp.NewToolResultText(output.String()), nil
+}
+
 func (i *IntegrationTools) Init(s *server.MCPServer) {
 	s.AddTools([]server.ServerTool{{
 		Tool: mcp.NewTool(
@@ -82,7 +117,23 @@ required for certain features, make sure to configure the integrations
 accordingly.`),
 		),
 		Handler: i.listHandler,
-	}}...)
+	},
+		{
+			Tool: mcp.NewTool(
+				IntegrationScaffoldTool,
+				mcp.WithDescription(`
+Scaffold the configuration required for a specific TSSC integration. The
+scaffolded configuration can be used as a reference to create the integration
+using the 'tssc integration <name> ...' command.`),
+				mcp.WithArray(
+					MissingIntegrations,
+					mcp.Description(`
+The missing integrations for deployment.`,
+					),
+				),
+			),
+			Handler: i.scaffoldHandler,
+		}}...)
 }
 
 func NewIntegrationTools(integrationCmd *cobra.Command) *IntegrationTools {

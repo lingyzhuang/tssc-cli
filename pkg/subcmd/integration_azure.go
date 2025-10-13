@@ -28,6 +28,12 @@ credentials required by the TSSC services to interact with Azure.
 The credentials are stored in a Kubernetes Secret in the default
 installation namespace.
 `
+const azureIntegrationExample = `
+  $ tssc integration azure \
+	  --host "https://azure.example.com" \
+	  --token "REDACTED" \
+	  --organization "REDACTED"
+`
 
 // Cmd exposes the cobra instance.
 func (a *IntegrationAzure) Cmd() *cobra.Command {
@@ -63,6 +69,7 @@ func NewIntegrationAzure(
 			Use:          "azure [flags]",
 			Short:        "Integrates a Azure instance into TSSC",
 			Long:         azureIntegrationLongDesc,
+			Example:      azureIntegrationExample,
 			SilenceUsage: true,
 		},
 

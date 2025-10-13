@@ -29,6 +29,11 @@ credentials required by the TSSC services to interact with GitLab.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const gitlabIntegrationExample = `
+  $ tssc integration gitlab \
+	  --group "my-gitlab-group" \
+	  --token "REDACTED"
+`
 
 // Cmd exposes the cobra instance.
 func (g *IntegrationGitLab) Cmd() *cobra.Command {
@@ -64,6 +69,7 @@ func NewIntegrationGitLab(
 			Use:          "gitlab [flags]",
 			Short:        "Integrates a GitLab instance into TSSC",
 			Long:         gitlabIntegrationLongDesc,
+			Example:      gitlabIntegrationExample,
 			SilenceUsage: true,
 		},
 

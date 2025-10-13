@@ -29,6 +29,12 @@ credentials required by the TSSC services to interact with BitBucket.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const bitbucketIntegrationExample = `
+  $ tssc integration bitbucket \
+	  --host "https://bitbucket.example.com" \
+	  --app-password "REDACTED" \
+	  --username "my-bitbucket-user"
+`
 
 // Cmd exposes the cobra instance.
 func (b *IntegrationBitBucket) Cmd() *cobra.Command {
@@ -64,6 +70,7 @@ func NewIntegrationBitBucket(
 			Use:          "bitbucket [flags]",
 			Short:        "Integrates a BitBucket instance into TSSC",
 			Long:         bitbucketIntegrationLongDesc,
+			Example:      bitbucketIntegrationExample,
 			SilenceUsage: true,
 		},
 

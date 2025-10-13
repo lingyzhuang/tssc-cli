@@ -29,6 +29,12 @@ credentials required by the TSSC services to interact with Jenkins.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const jenkinsIntegrationExample = `
+  $ tssc integration jenkins \
+	  --url "https://jenkins.example.com" \
+	  --token "REDACTED" \
+	  --username "my-jenkins-user"
+`
 
 // Cmd exposes the cobra instance.
 func (j *IntegrationJenkins) Cmd() *cobra.Command {
@@ -64,6 +70,7 @@ func NewIntegrationJenkins(
 			Use:          "jenkins [flags]",
 			Short:        "Integrates a Jenkins instance into TSSC",
 			Long:         jenkinsIntegrationLongDesc,
+			Example:      jenkinsIntegrationExample,
 			SilenceUsage: true,
 		},
 

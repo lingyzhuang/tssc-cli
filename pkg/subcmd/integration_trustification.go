@@ -29,6 +29,13 @@ credentials required by the TSSC services to interact with Trustification.
 The credentials are stored in a Kubernetes Secret in the configured namespace
 for RHDH.
 `
+const trustificationIntegrationExample = `
+  $ tssc integration trustification \
+	  --bombastic-api-url "https://sbom.trustification.dev" \
+	  --oidc-issuer-url "https://sso.trustification.dev/realms/chicken" \
+	  --oidc-client-id "REDACTED" \
+	  --oidc-client-secret "REDACTED"
+`
 
 // Cmd exposes the cobra instance.
 func (t *IntegrationTrustification) Cmd() *cobra.Command {
@@ -65,6 +72,7 @@ func NewIntegrationTrustification(
 			Use:          "trustification [flags]",
 			Short:        "Integrates a Trustification instance into TSSC",
 			Long:         trustificationIntegrationLongDesc,
+			Example:      trustificationIntegrationExample,
 			SilenceUsage: true,
 		},
 
