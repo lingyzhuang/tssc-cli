@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-appstudio/tssc-cli/pkg/chartfs"
 
+	"dario.cat/mergo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -126,6 +127,7 @@ func (c *Config) Set(key string, configData any) error {
 
 	for keyPath, value := range keyPaths {
 		keys := strings.Split(keyPath, ".")
+		fmt.Printf("keys: %s\n", keys)
 		if err = UpdateNestedValue(&c.root, keys, value); err != nil {
 			return err
 		}
@@ -220,6 +222,88 @@ func (c *Config) SetProduct(name string, spec Product) error {
 	}
 
 	return fmt.Errorf("product %q not found", name)
+}
+
+func (c *Config) EnableDisableProduct(name string, enabled bool) error {
+	return c.updateProduct(name, func(product Product) error {
+		product.Enabled = enabled
+		return nil
+	})
+}
+
+func (c *Config) SetProductNamespace(name string, namespace string) error {
+	return c.updateProduct(name, func(product Product) error {
+		product.Namespace = &namespace
+		return nil
+	})
+}
+
+func (c *Config) SetProductProperties(name string, properties map[string]interface{}) error {
+	return c.updateProduct(name, func(product Product) error {
+		if product.Properties == nil {
+			product.Properties = make(map[string]interface{})
+		}
+		return mergo.Merge(&product.Properties, properties, mergo.WithOverride)
+	})
+}
+
+func (c *Config) updateProduct(name string, modifier func(Product) error) error {
+	product, err := c.GetProduct(name)
+	if err != nil {
+		return fmt.Errorf("failed to get product %s: %w", name, err)
+	}
+
+	if err := modifier(*product); err != nil {
+		return err
+	}
+
+	return c.SetProduct(name, *product)
+}
+
+func (c *Config) SetConfiguration(setPatterns []string) (*Config, error) {
+	keyPaths, err := ParseKeyValues(setPatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range keyPaths {
+		if err := c.processConfigKey(key, value); err != nil {
+			return nil, fmt.Errorf("failed to process %s: %w", key, err)
+		}
+	}
+
+	return c, nil
+}
+
+func (c *Config) processConfigKey(key string, value interface{}) error {
+	settingMap, ok := value.(map[string]any)
+	if !ok {
+		return fmt.Errorf("expected map[string]any for setting, got %T", value)
+	}
+	if key == "setting" {
+		for k, v := range settingMap {
+			if err := c.Set(k, v); err != nil {
+				return err
+			}
+		}
+		return nil
+	} else {
+		return c.processProductConfig(key, settingMap)
+	}
+}
+
+func (c *Config) processProductConfig(name string, value map[string]any) error {
+	for k, v := range value {
+		switch k {
+		case "enabled":
+			return c.EnableDisableProduct(name, v.(bool))
+		case "namespace":
+			return c.SetProductNamespace(name, v.(string))
+		default:
+			return c.SetProductProperties(name, v.(map[string]interface{}))
+		}
+	}
+	return nil
 }
 
 // MarshalYAML marshals the Config into a YAML byte array.
