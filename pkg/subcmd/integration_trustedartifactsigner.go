@@ -17,16 +17,21 @@ type IntegrationTrustedArtifactSigner struct {
 	logger      *slog.Logger             // application logger
 	cfg         *config.Config           // installer configuration
 	kube        *k8s.Kube                // kubernetes client
+	manager     *config.ConfigMapManager // cluster configuration manager
 	integration *integration.Integration // integration instance
 }
 
 var _ Interface = &IntegrationTrustedArtifactSigner{}
 
-const trustedArtifactSignerIntegrationLongDesc = `
+const (
+	trustedArtifactSignerIntegrationLongDesc = `
 Manages the TrustedArtifactSigner integration with TSSC, by storing the required
 URL required to interact with Trusted Artifact Signer.
 
-The credentials are stored in a Kubernetes Secret in the configured namespace for TSSC.`
+The credentials are stored in a Kubernetes Secret in the configured namespace for TSSC.
+`
+	tasSetPattern = "Product[Trusted Artifact Signer].enabled=false"
+)
 
 // Cmd exposes the cobra instance.
 func (t *IntegrationTrustedArtifactSigner) Cmd() *cobra.Command {
@@ -47,7 +52,16 @@ func (t *IntegrationTrustedArtifactSigner) Validate() error {
 
 // Run creates or updates the TrustedArtifactSigner integration secret.
 func (t *IntegrationTrustedArtifactSigner) Run() error {
-	return t.integration.Create(t.cmd.Context(), t.cfg)
+	err := t.integration.Create(t.cmd.Context(), t.cfg)
+	if err != nil {
+		return err
+	}
+	// Disable product after creating the integration
+	config, err := t.cfg.SetConfiguration([]string{tasSetPattern})
+	if err != nil {
+		return err
+	}
+	return t.manager.Update(t.cmd.Context(), config)
 }
 
 // NewIntegrationTrustedArtifactSigner creates the sub-command for the "integration
@@ -68,6 +82,7 @@ func NewIntegrationTrustedArtifactSigner(
 
 		logger:      logger,
 		kube:        kube,
+		manager:     config.NewConfigMapManager(kube),
 		integration: i,
 	}
 	i.PersistentFlags(t.cmd)
