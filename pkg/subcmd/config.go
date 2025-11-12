@@ -25,11 +25,13 @@ type Config struct {
 
 	manager    *config.ConfigMapManager // cluster configuration manager
 	configPath string                   // configuration file relative path
+	setValues  []string                 // configuration values to update
 
 	create bool // create a new configuration
 	force  bool // overrides existing configuration
 	get    bool // show the current configuration
 	delete bool // delete the current configuration
+	set    bool // set the configuration
 }
 
 var _ Interface = &Config{}
@@ -96,6 +98,12 @@ func (c *Config) PersistentFlags(p *pflag.FlagSet) {
 		false,
 		"Delete the current cluster configuration",
 	)
+	p.StringSliceVar(
+		&c.setValues,
+		"set",
+		[]string{},
+		"Set configuration values (format: path=value,products[\"Product A\"].enabled=false)",
+	)
 }
 
 // validateFlags validates the flags passed to the subcommand.
@@ -103,8 +111,11 @@ func (c *Config) validateFlags() error {
 	if c.get && c.delete {
 		return fmt.Errorf("cannot get and delete at the same time")
 	}
-	if !c.create && !c.force && !c.get && !c.delete {
-		return fmt.Errorf("either create, get or delete must be set")
+	if c.delete && c.set {
+		return fmt.Errorf("cannot set values in delete")
+	}
+	if !c.create && !c.force && !c.get && !c.delete && !c.set {
+		return fmt.Errorf("either create, get, delete or set must be set")
 	}
 	return nil
 }
@@ -135,9 +146,13 @@ func (c *Config) Complete(args []string) error {
 
 // Validate make sure all items are in place.
 func (c *Config) Validate() error {
+	if len(c.setValues) != 0 {
+		c.set = true
+	}
 	if c.create && c.configPath == "" {
 		return fmt.Errorf("configuration file is not informed")
 	}
+
 	if err := c.validateFlags(); err != nil {
 		return err
 	}
@@ -153,6 +168,13 @@ func (c *Config) runCreate() error {
 	cfg, err := config.NewConfigFromFile(c.cfs, c.configPath)
 	if err != nil {
 		return err
+	}
+
+	if c.set {
+		cfg, err = cfg.SetConfiguration(c.setValues)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Ensuring the configuration is compabile with the Helm charts available for
@@ -182,7 +204,6 @@ func (c *Config) runCreate() error {
 		if err != nil {
 			return err
 		}
-		fmt.Print(cfg.String())
 		return nil
 	}
 
@@ -242,10 +263,44 @@ func (c *Config) runGet() error {
 	return nil
 }
 
+// runSet controls the update process, if --set is used together with --create
+// update in cluster will be done in runCreate
+func (c *Config) runSet() error {
+	c.log().Debug("Set values of configuration items in cluster")
+	cfg, err := c.manager.GetConfig(c.cmd.Context())
+	if err != nil {
+		return err
+	}
+	cfg, err = cfg.SetConfiguration(c.setValues)
+	if err != nil {
+		return err
+	}
+
+	if c.flags.DryRun {
+		c.log().Debug("[DRY-RUN] Only showing the updated configuration payload")
+		fmt.Printf(
+			"[DRY-RUN] Update the ConfigMap %q/%q, with the label selector %q\n",
+			cfg.Installer.Namespace,
+			config.Name,
+			fmt.Sprintf("%s=true", config.Label),
+		)
+		fmt.Print(cfg.String())
+		return nil
+	}
+	if err = c.manager.Update(c.cmd.Context(), cfg); err != nil {
+		return fmt.Errorf(
+			"failed to update configuration in cluster: %s", err)
+	}
+	return err
+}
+
 // Run runs the subcommand main action, checks which flags are enabled to interact
 // with cluster's configuration.
 func (c *Config) Run() error {
 	var err error
+	if len(c.setValues) != 0 {
+		c.set = true
+	}
 	switch {
 	case c.create:
 		if err = c.runCreate(); err != nil {
@@ -254,6 +309,12 @@ func (c *Config) Run() error {
 	case c.delete:
 		if err = c.runDelete(); err != nil {
 			return err
+		}
+	case c.set:
+		if !c.create {
+			if err = c.runSet(); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -264,6 +325,7 @@ func (c *Config) Run() error {
 			return err
 		}
 	}
+
 	return nil
 }
 

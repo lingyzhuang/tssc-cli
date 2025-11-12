@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhat-appstudio/tssc-cli/pkg/chartfs"
 
+	"dario.cat/mergo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -220,6 +221,62 @@ func (c *Config) SetProduct(name string, spec Product) error {
 	}
 
 	return fmt.Errorf("product %q not found", name)
+}
+
+func (c *Config) SetConfiguration(setPatterns []string) (*Config, error) {
+	keyPaths, err := ParseKeyValues(setPatterns)
+	if err != nil {
+		return nil, err
+	}
+
+	for key, value := range keyPaths {
+		if err := c.processConfigKey(key, value); err != nil {
+			return nil, fmt.Errorf("failed to process %s: %w", key, err)
+		}
+	}
+
+	return c, nil
+}
+
+func (c *Config) processConfigKey(key string, value interface{}) error {
+	settingMap, ok := value.(map[string]any)
+	if !ok {
+		return fmt.Errorf("expected map[string]any for setting, got %T", value)
+	}
+	if key == "setting" {
+		if err := c.Set("tssc", settingMap); err != nil {
+			return err
+		}
+		return nil
+	} else {
+		return c.processProductConfig(key, settingMap)
+	}
+}
+
+func (c *Config) processProductConfig(name string, value map[string]any) error {
+	spec, err := c.GetProduct(name)
+	if err != nil {
+		return fmt.Errorf("failed to get product %s: %w", name, err)
+	}
+	for k, v := range value {
+		switch k {
+		case "enabled":
+			spec.Enabled = v.(bool)
+		case "namespace":
+			namespace := v.(string)
+			spec.Namespace = &namespace
+		case "properties":
+			if spec.Properties == nil {
+				spec.Properties = make(map[string]interface{})
+			}
+			if err := mergo.Merge(&spec.Properties, v.(map[string]interface{}), mergo.WithOverride); err != nil {
+				return fmt.Errorf("failed to merge properties for product %s: %w", name, err)
+			}
+		default:
+			return fmt.Errorf("failed to parse product key: %s", k)
+		}
+	}
+	return c.SetProduct(name, *spec)
 }
 
 // MarshalYAML marshals the Config into a YAML byte array.
