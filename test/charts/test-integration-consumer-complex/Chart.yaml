@@ -1,0 +1,9 @@
+apiVersion: v2
+name: test-integration-consumer-complex
+description: Chart that requires complex integration expression (github OR gitlab) AND quay
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"
+annotations:
+  tssc.redhat-appstudio.github.com/integrations-required: "(test-github || test-gitlab) && test-quay"
+  tssc.redhat-appstudio.github.com/depends-on: test-integration-provider

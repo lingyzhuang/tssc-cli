@@ -1,0 +1,4 @@
+hooks:
+  enabled: true
+  preDeployMessage: "Running pre-deploy hook"
+  postDeployMessage: "Running post-deploy hook"

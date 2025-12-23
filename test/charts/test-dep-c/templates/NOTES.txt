@@ -1,0 +1,3 @@
+Installed {{ .Chart.Name }} (Depends on {{ .Values.dependsOn }})
+Component: {{ .Values.component }}
+Order: {{ .Values.order }}

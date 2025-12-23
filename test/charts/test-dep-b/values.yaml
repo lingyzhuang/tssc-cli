@@ -1,0 +1,3 @@
+component: "middle"
+order: 2
+dependsOn: "test-dep-a"

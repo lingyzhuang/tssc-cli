@@ -1,0 +1,8 @@
+apiVersion: v2
+name: test-weight-high
+description: Chart with high weight (should be installed last)
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"
+annotations:
+  tssc.redhat-appstudio.github.com/weight: "90"

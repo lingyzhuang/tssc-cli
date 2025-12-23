@@ -1,0 +1,3 @@
+component: "leaf"
+order: 3
+dependsOn: "test-dep-b"

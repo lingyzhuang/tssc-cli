@@ -1,0 +1,17 @@
+complexData:
+  nested:
+    key1: "value1"
+    key2: "value2"
+  list:
+    - item1
+    - item2
+    - item3
+  number: 42
+  boolean: true
+
+jsonData: '{"key": "value", "number": 123}'
+
+yamlData: |
+  key: value
+  nested:
+    foo: bar

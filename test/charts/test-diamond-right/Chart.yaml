@@ -1,0 +1,8 @@
+apiVersion: v2
+name: test-diamond-right
+description: Right branch of diamond (depends on base)
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"
+annotations:
+  tssc.redhat-appstudio.github.com/depends-on: test-diamond-base

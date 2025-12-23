@@ -1,0 +1,8 @@
+apiVersion: v2
+name: test-product
+description: Chart that defines a product with its own namespace
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"
+annotations:
+  tssc.redhat-appstudio.github.com/product-name: "Test Product"

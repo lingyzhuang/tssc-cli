@@ -1,0 +1,3 @@
+useProductNamespace: "Test Product"
+# This will be set to the product namespace at runtime
+namespace: "test-product-ns"

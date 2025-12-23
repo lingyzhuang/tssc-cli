@@ -1,0 +1,8 @@
+apiVersion: v2
+name: test-dep-c
+description: Chart that depends on test-dep-b (C in chain A → B → C)
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"
+annotations:
+  tssc.redhat-appstudio.github.com/depends-on: test-dep-b

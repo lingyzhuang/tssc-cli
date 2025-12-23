@@ -1,0 +1,9 @@
+Thank you for installing {{ .Chart.Name }}.
+
+This chart tests custom template functions:
+- toYaml: Convert data structures to YAML
+- toJson: Convert data structures to JSON
+- fromYaml: Parse YAML strings
+- fromJson: Parse JSON strings
+
+Check the ConfigMap {{ .Release.Name }}-config to see the results.

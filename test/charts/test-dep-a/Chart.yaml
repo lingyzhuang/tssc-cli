@@ -1,0 +1,6 @@
+apiVersion: v2
+name: test-dep-a
+description: Base chart with no dependencies (A in chain A → B → C)
+type: application
+version: "1.0.0"
+appVersion: "1.0.0"

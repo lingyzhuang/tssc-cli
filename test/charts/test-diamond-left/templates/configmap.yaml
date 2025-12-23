@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    app: {{ .Chart.Name }}
+    position: {{ .Values.position }}
+data:
+  position: {{ .Values.position | quote }}
+  level: {{ .Values.level | quote }}
+  dependsOn: {{ .Values.dependsOn | quote }}

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+    useProductNamespace: {{ .Values.useProductNamespace | quote }}
+data:
+  useProductNamespace: {{ .Values.useProductNamespace | quote }}
+  namespace: {{ .Values.namespace | quote }}

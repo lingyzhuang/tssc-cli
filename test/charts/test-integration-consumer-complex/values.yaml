@@ -1,0 +1,2 @@
+integrationsRequired: "(test-github || test-gitlab) && test-quay"
+celExpression: true
