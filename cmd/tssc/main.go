@@ -39,11 +39,13 @@ func main() {
 	}
 
 	// Create application runtime from embedded tarball.
+	appIntegrations := framework.StandardIntegrations()
+	appIntegrations = framework.WithURLProvider(appIntegrations, CustomURLProvider{})
 	app, err := framework.NewAppFromTarball(
 		appCtx,
 		installer.InstallerTarball,
 		cwd,
-		framework.WithIntegrations(framework.StandardIntegrations()...),
+		framework.WithIntegrations(appIntegrations...),
 		framework.WithMCPImage(mcpImage),
 	)
 	if err != nil {
