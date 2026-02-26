@@ -404,11 +404,7 @@ jenkinsGetValues() {
     JENKINS__USERNAME="$(echo "$JENKINS_SECRET_JSON" | jq -r '.data.username | @base64d')"
     JENKINS__TOKEN="$(echo "$JENKINS_SECRET_JSON" | jq -r '.data.token | @base64d')"
 
-    # Add usernames with passwords
-    if oc get secrets -n "$NAMESPACE" "tssc-quay-integration" -o name >/dev/null 2>&1; then
-        echo "Setting QUAY_IO_CREDS: *********"
-        add_username_with_password "QUAY_IO_CREDS" "$IMAGE_REGISTRY_USER" "$IMAGE_REGISTRY_PASSWORD"
-    fi
+    # Add gitops credentials
     echo "Setting GITOPS_CREDENTIALS: *********"
     add_username_with_password "GITOPS_CREDENTIALS" "$GIT_USER" "$GIT_TOKEN"
 }
